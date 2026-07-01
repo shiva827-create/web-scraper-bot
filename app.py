@@ -1,40 +1,42 @@
-import streamlit as st
+
+       import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 
-# వెబ్‌సైట్ సెట్టింగ్స్
-st.set_page_config(page_title="Web Scraper Bot", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="Amazon Tracker", page_icon="🛒", layout="centered")
 
-st.title("🤖 నా సొంత వెబ్ స్క్రాపర్ బాట్")
+st.title("🛒 అమెజాన్ ప్రైస్ & డేటా స్క్రాపర్")
 st.write("---")
-st.markdown("### **ఇంటర్నెట్ నుండి ఆటోమేటిక్ గా డేటా లాగే రోబోట్!**")
+st.write("అమెజాన్ సెక్యూరిటీని దాటి డేటాని లాగే స్టీల్త్ (Stealth) రోబోట్!")
 
-st.write("నేను ఇప్పుడు 'quotes.toscrape.com' అనే వెబ్‌సైట్‌లోకి వెళ్లి అక్కడున్న డేటాని ఆటోమేటిక్ గా లాక్కొస్తాను. రెడీనా?")
+# యూజర్ దగ్గర నుండి అమెజాన్ లింక్ తీసుకోవడం
+product_url = st.text_input("🔗 ఏదైనా అమెజాన్ ప్రోడక్ట్ లింక్ ఇక్కడ పేస్ట్ చేయండి:")
 
-# బటన్ నొక్కగానే రోబోట్ పని మొదలుపెడుతుంది
-if st.button("🚀 ఇంటర్నెట్ నుండి కోట్స్ తీసుకురా", use_container_width=True):
-    
-    # 1. ఏ వెబ్‌సైట్‌కి వెళ్ళాలో ఆ లింక్ (URL) ఇస్తున్నాం
-    url = "http://quotes.toscrape.com/"
-    
-    try:
-        # 2. ఆ వెబ్‌సైట్‌కి రిక్వెస్ట్ పంపి, పేజీని డౌన్‌లోడ్ చేస్తున్నాం
-        response = requests.get(url)
+if st.button("🚀 డేటా లాక్కురా!", use_container_width=True):
+    if product_url:
+        # దొంగ వేషం: రోబోట్ లాగా కాకుండా, క్రోమ్ బ్రౌజర్ లాగా వెళ్ళడానికి ఈ హెడర్స్ వాడతాం
+        HEADERS = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US, en;q=0.5'
+        }
         
-        # 3. ఆ పేజీలోని కోడ్ (HTML) ని BeautifulSoup తో చదువుతున్నాం
-        soup = BeautifulSoup(response.text, 'html.parser')
-        
-        # 4. అందులో 'text' అనే క్లాస్ ఉన్నవి కోట్స్, 'author' అనే క్లాస్ ఉన్నవి పేర్లు
-        quotes = soup.find_all('span', class_='text')
-        authors = soup.find_all('small', class_='author')
-        
-        st.success("✅ సక్సెస్! వెబ్‌సైట్ నుండి డేటా లాగడం పూర్తయింది. ఇవిగో టాప్ 5 కోట్స్:")
-        st.write("---")
-        
-        # 5. లాక్కొచ్చిన డేటాలో మొదటి 5 వాటిని స్క్రీన్ మీద చూపిస్తున్నాం
-        for i in range(5):
-            st.info(f"💬 {quotes[i].text}")
-            st.warning(f"✍️ - {authors[i].text}")
-            
-    except Exception as e:
-        st.error("ఎక్కడో తేడా కొట్టింది బ్రో, ఆ వెబ్‌సైట్ మనల్ని బ్లాక్ చేసి ఉండొచ్చు!")
+        try:
+            with st.spinner("అమెజాన్ సెక్యూరిటీని దాటుకుంటూ వెళ్తున్నా... 🕵️‍♂️"):
+                # వెబ్‌సైట్‌కి వెళ్లడం
+                response = requests.get(product_url, headers=HEADERS)
+                soup = BeautifulSoup(response.content, 'html.parser')
+                
+                # ప్రోడక్ట్ పేరు (Title) లాగడం
+                title_element = soup.find("span", attrs={"id": 'productTitle'})
+                
+                if title_element:
+                    title = title_element.text.strip()
+                    st.success("✅ సక్సెస్! అమెజాన్ సెక్యూరిటీని క్రాక్ చేశాం!")
+                    st.info(f"📦 **ప్రోడక్ట్ పేరు:** {title}")
+                else:
+                    st.warning("⚠️ అరెరె! అమెజాన్ మన రోబోట్‌ని పసిగట్టేసింది. CAPTCHA (బొమ్మల పజిల్) అడుగుతోంది!")
+                    
+        except Exception as e:
+            st.error("ఓప్స్! లింక్ తప్పుగా ఉందో, లేక సర్వర్ క్రాష్ అయ్యిందో చెక్ చెయ్ బ్రో.")
+    else:
+        st.error("ముందు పైన ఏదైనా అమెజాన్ లింక్ పేస్ట్ చెయ్ తమ్ముడూ!")
